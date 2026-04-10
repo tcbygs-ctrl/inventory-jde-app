@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JDE Inventory - Real-time</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
+
+    .header {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white; padding: 20px 30px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header h1 { font-size: 1.4rem; }
+    .header .status { font-size: 0.85rem; opacity: 0.9; }
+    .header .status .dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; background: #4caf50; margin-right: 5px;
+    }
+
+    .controls {
+      padding: 20px 30px; background: white;
+      border-bottom: 1px solid #ddd;
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .controls input, .controls select {
+      padding: 10px 14px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.95rem;
+    }
+    .controls input { flex: 1; min-width: 250px; }
+    .controls select { min-width: 150px; }
+    .controls button {
+      padding: 10px 24px; background: #1a73e8; color: white;
+      border: none; border-radius: 6px; font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .controls button:hover { background: #1557b0; }
+    .controls .auto-refresh {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.85rem; color: #666; margin-left: auto;
+    }
+
+    .summary {
+      padding: 12px 30px; background: #e8f0fe;
+      font-size: 0.9rem; color: #1a73e8;
+      display: flex; gap: 20px;
+    }
+
+    .table-wrap { padding: 20px 30px; overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 8px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    thead { background: #f8f9fa; }
+    th { padding: 12px 14px; text-align: left; font-size: 0.8rem; color: #666;
+         text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e0e0e0; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+    tr:hover { background: #f5f8ff; }
+
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.8rem; font-weight: 500;
+    }
+    .tag-color { background: #fce4ec; color: #c62828; }
+    .tag-size { background: #e8eaf6; color: #283593; }
+    .tag-branch { background: #e0f2f1; color: #00695c; }
+
+    .qty-available {
+      font-weight: 700; color: #2e7d32;
+    }
+    .qty-reserved { color: #e65100; }
+
+    .loading {
+      text-align: center; padding: 60px;
+      color: #999; font-size: 1.1rem;
+    }
+    .error { text-align: center; padding: 40px; color: #d32f2f; }
+    .empty { text-align: center; padding: 60px; color: #999; }
+
+    /* Group rows by item */
+    .group-header td {
+      background: #f0f4ff; font-weight: 600;
+      border-top: 2px solid #c5cae9;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>JDE Inventory Viewer</h1>
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Ready</span>
+      <span id="lastRefresh"></span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="ค้นหารหัสสินค้า หรือ ชื่อสินค้า..." />
+    <select id="branchSelect"><option value="">ทุกคลัง</option></select>
+    <button onclick="loadData()">ค้นหา</button>
+    <div class="auto-refresh">
+      <input type="checkbox" id="autoRefresh" checked />
+      <label for="autoRefresh">Auto-refresh ทุก</label>
+      <select id="refreshInterval" onchange="setupAutoRefresh()">
+        <option value="30">30 วินาที</option>
+        <option value="60" selected>1 นาที</option>
+        <option value="300">5 นาที</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="summary" id="summary" style="display:none">
+    <span>สินค้า: <strong id="totalItems">0</strong> รายการ</span>
+    <span>พร้อมขาย: <strong id="totalAvailable">0</strong></span>
+  </div>
+
+  <div class="table-wrap">
+    <div id="content"><div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div></div>
+  </div>
+
+  <script>
+    let refreshTimer = null;
+
+    async function loadBranches() {
+      try {
+        const res = await fetch('/api/branches');
+        const branches = await res.json();
+        const sel = document.getElementById('branchSelect');
+        branches.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b; opt.textContent = b;
+          sel.appendChild(opt);
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    async function loadData() {
+      const search = document.getElementById('searchInput').value;
+      const branch = document.getElementById('branchSelect').value;
+
+      if (!search && !branch) {
+        document.getElementById('content').innerHTML =
+          '<div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
+        return;
+      }
+
+      document.getElementById('statusDot').style.background = '#ff9800';
+      document.getElementById('statusText').textContent = 'กำลังโหลด...';
+      document.getElementById('content').innerHTML = '<div class="loading">กำลังดึงข้อมูล...</div>';
+
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        if (branch) params.set('branch', branch);
+
+        const res = await fetch('/api/inventory?' + params);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        renderTable(data);
+        document.getElementById('statusDot').style.background = '#4caf50';
+        document.getElementById('statusText').textContent = 'เชื่อมต่อแล้ว';
+        document.getElementById('lastRefresh').textContent =
+          ' — อัปเดต ' + new Date().toLocaleTimeString('th-TH');
+      } catch (err) {
+        document.getElementById('content').innerHTML =
+          `<div class="error">เกิดข้อผิดพลาด: ${err.message}</div>`;
+        document.getElementById('statusDot').style.background = '#f44336';
+        document.getElementById('statusText').textContent = 'ผิดพลาด';
+      }
+    }
+
+    function renderTable(data) {
+      if (!data.length) {
+        document.getElementById('content').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
+        document.getElementById('summary').style.display = 'none';
+        return;
+      }
+
+      // Summary
+      document.getElementById('summary').style.display = 'flex';
+      document.getElementById('totalItems').textContent = data.length;
+      document.getElementById('totalAvailable').textContent =
+        data.reduce((s, r) => s + r.AvailableToSell, 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+
+      // Group by ItemCode
+      const groups = {};
+      data.forEach(r => {
+        if (!groups[r.ItemCode]) groups[r.ItemCode] = { desc: r.Description, rows: [] };
+        groups[r.ItemCode].rows.push(r);
+      });
+
+      let html = `<table>
+        <thead><tr>
+          <th>รหัสสินค้า</th><th>รายละเอียด</th><th>สี</th><th>ไซส์</th>
+          <th>คลัง</th><th>หน่วย</th><th style="text-align:right">ในคลัง</th>
+          <th style="text-align:right">จอง</th><th style="text-align:right">พร้อมขาย</th>
+          <th>อัปเดตล่าสุด</th>
+        </tr></thead><tbody>`;
+
+      for (const [code, group] of Object.entries(groups)) {
+        html += `<tr class="group-header"><td colspan="10">${code} — ${group.desc}</td></tr>`;
+        group.rows.forEach(r => {
+          const lastUpdate = r.LastUpdate
+            ? new Date(r.LastUpdate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'medium' })
+            : '-';
+          html += `<tr>
+            <td>${r.ItemCode}</td>
+            <td>${r.Description || '-'}</td>
+            <td><span class="tag tag-color">${r.ColorThai || '-'}</span></td>
+            <td><span class="tag tag-size">${r.Size || '-'}</span></td>
+            <td><span class="tag tag-branch">${r.Branch || '-'}</span></td>
+            <td>${r.UOM || '-'}</td>
+            <td style="text-align:right">${(r.QtyOnHand || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
+            <td style="text-align:right" class="qty-reserved">${(r.QtyReserved || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
+            <td style="text-align:right" class="qty-available">${(r.AvailableToSell || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
+            <td>${lastUpdate}</td>
+          </tr>`;
+        });
+      }
+
+      html += '</tbody></table>';
+      document.getElementById('content').innerHTML = html;
+    }
+
+    function setupAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const sec = parseInt(document.getElementById('refreshInterval').value);
+      refreshTimer = setInterval(() => {
+        if (document.getElementById('autoRefresh').checked) loadData();
+      }, sec * 1000);
+    }
+
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadData();
+    });
+
+    loadBranches();
+    setupAutoRefresh();
+  </script>
+</body>
+</html>
