@@ -5,85 +5,203 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JDE Inventory - Real-time</title>
   <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #0d47a1;
+      --green: #2e7d32;
+      --orange: #e65100;
+      --red: #d32f2f;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --text: #333;
+      --text-light: #666;
+      --radius: 8px;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
 
+    /* Header */
     .header {
-      background: linear-gradient(135deg, #1a73e8, #0d47a1);
-      color: white; padding: 20px 30px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; padding: 16px 24px;
       display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .header h1 { font-size: 1.4rem; }
-    .header .status { font-size: 0.85rem; opacity: 0.9; }
+    .header h1 { font-size: 1.3rem; white-space: nowrap; }
+    .header .status { font-size: 0.8rem; opacity: 0.9; display: flex; align-items: center; gap: 6px; }
     .header .status .dot {
-      display: inline-block; width: 8px; height: 8px;
-      border-radius: 50%; background: #4caf50; margin-right: 5px;
+      width: 8px; height: 8px; border-radius: 50%; background: #4caf50;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
+    /* Controls */
     .controls {
-      padding: 20px 30px; background: white;
-      border-bottom: 1px solid #ddd;
-      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      padding: 16px 24px; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
     }
-    .controls input, .controls select {
-      padding: 10px 14px; border: 1px solid #ccc;
-      border-radius: 6px; font-size: 0.95rem;
+    .search-group {
+      flex: 1; min-width: 200px; position: relative;
     }
-    .controls input { flex: 1; min-width: 250px; }
-    .controls select { min-width: 150px; }
-    .controls button {
-      padding: 10px 24px; background: #1a73e8; color: white;
-      border: none; border-radius: 6px; font-size: 0.95rem;
-      cursor: pointer;
+    .search-group input {
+      width: 100%; padding: 10px 14px 10px 38px;
+      border: 2px solid var(--border); border-radius: var(--radius);
+      font-size: 0.95rem; transition: border-color 0.2s;
     }
-    .controls button:hover { background: #1557b0; }
-    .controls .auto-refresh {
+    .search-group input:focus { outline: none; border-color: var(--primary); }
+    .search-group .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: #999; font-size: 1rem;
+    }
+    .controls select {
+      padding: 10px 14px; border: 2px solid var(--border);
+      border-radius: var(--radius); font-size: 0.95rem;
+      background: white; min-width: 130px;
+    }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: var(--radius);
+      font-size: 0.95rem; cursor: pointer; font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent; color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    .btn-outline:hover { background: var(--primary); color: white; }
+
+    .auto-refresh {
       display: flex; align-items: center; gap: 6px;
-      font-size: 0.85rem; color: #666; margin-left: auto;
+      font-size: 0.8rem; color: var(--text-light); margin-left: auto;
     }
+    .auto-refresh select {
+      padding: 4px 8px; font-size: 0.8rem; min-width: auto;
+      border: 1px solid var(--border); border-radius: 4px;
+    }
+    .switch { position: relative; width: 36px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+      position: absolute; inset: 0; background: #ccc;
+      border-radius: 20px; cursor: pointer; transition: 0.3s;
+    }
+    .switch .slider::before {
+      content: ''; position: absolute; width: 14px; height: 14px;
+      left: 3px; bottom: 3px; background: white;
+      border-radius: 50%; transition: 0.3s;
+    }
+    .switch input:checked + .slider { background: var(--primary); }
+    .switch input:checked + .slider::before { transform: translateX(16px); }
 
+    /* Summary cards */
     .summary {
-      padding: 12px 30px; background: #e8f0fe;
-      font-size: 0.9rem; color: #1a73e8;
-      display: flex; gap: 20px;
+      padding: 16px 24px; display: flex; gap: 12px;
+      flex-wrap: wrap;
     }
+    .summary-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column; min-width: 120px;
+    }
+    .summary-card .label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-card .value { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-top: 2px; }
+    .summary-card.green .value { color: var(--green); }
 
-    .table-wrap { padding: 20px 30px; overflow-x: auto; }
+    /* Table */
+    .table-wrap { padding: 0 24px 24px; overflow-x: auto; }
     table {
       width: 100%; border-collapse: collapse;
-      background: white; border-radius: 8px; overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: var(--card); border-radius: var(--radius); overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      min-width: 800px;
     }
-    thead { background: #f8f9fa; }
-    th { padding: 12px 14px; text-align: left; font-size: 0.8rem; color: #666;
-         text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e0e0e0; }
-    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+    thead { background: #f8f9fa; position: sticky; top: 0; }
+    th {
+      padding: 12px 14px; text-align: left; font-size: 0.75rem; color: var(--text-light);
+      text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem; }
     tr:hover { background: #f5f8ff; }
+    .text-right { text-align: right; }
 
     .tag {
-      display: inline-block; padding: 2px 8px; border-radius: 4px;
-      font-size: 0.8rem; font-weight: 500;
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 0.78rem; font-weight: 500; white-space: nowrap;
     }
     .tag-color { background: #fce4ec; color: #c62828; }
     .tag-size { background: #e8eaf6; color: #283593; }
     .tag-branch { background: #e0f2f1; color: #00695c; }
 
-    .qty-available {
-      font-weight: 700; color: #2e7d32;
-    }
-    .qty-reserved { color: #e65100; }
+    .qty-available { font-weight: 700; color: var(--green); }
+    .qty-reserved { color: var(--orange); }
+    .qty-onhand { color: var(--primary); font-weight: 500; }
 
-    .loading {
-      text-align: center; padding: 60px;
-      color: #999; font-size: 1.1rem;
-    }
-    .error { text-align: center; padding: 40px; color: #d32f2f; }
-    .empty { text-align: center; padding: 60px; color: #999; }
-
-    /* Group rows by item */
     .group-header td {
-      background: #f0f4ff; font-weight: 600;
-      border-top: 2px solid #c5cae9;
+      background: linear-gradient(135deg, #e8eaf6, #f0f4ff);
+      font-weight: 600; border-top: 2px solid #c5cae9;
+      font-size: 0.92rem; padding: 10px 14px;
+    }
+
+    .loading, .empty, .error {
+      text-align: center; padding: 60px 20px; font-size: 1rem;
+    }
+    .loading { color: #999; }
+    .error { color: var(--red); background: #fff5f5; border-radius: var(--radius); margin: 20px 0; }
+    .empty { color: #999; }
+    .loading .spinner {
+      width: 32px; height: 32px; border: 3px solid #e0e0e0;
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mobile cards view */
+    .card-view { display: none; }
+    .item-card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .item-card-header {
+      background: linear-gradient(135deg, #e8eaf6, #f0f4ff);
+      padding: 12px 16px; font-weight: 600; font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .item-card-row {
+      padding: 10px 16px; border-bottom: 1px solid #f5f5f5;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .item-card-row:last-child { border-bottom: none; }
+    .item-card-field { display: flex; flex-direction: column; }
+    .item-card-field .label { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; }
+    .item-card-field .val { font-size: 0.88rem; margin-top: 2px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .header h1 { font-size: 1.1rem; }
+      .controls { padding: 12px 16px; }
+      .search-group { min-width: 100%; }
+      .controls select { flex: 1; min-width: 0; }
+      .auto-refresh { width: 100%; margin-left: 0; justify-content: center; }
+      .summary { padding: 12px 16px; }
+      .summary-card { flex: 1; min-width: 80px; padding: 10px 14px; }
+      .summary-card .value { font-size: 1.1rem; }
+      .table-wrap { padding: 0 16px 16px; display: none; }
+      .card-view { display: block; padding: 0 16px 16px; }
+    }
+    @media (min-width: 769px) {
+      .card-view { display: none !important; }
+      .table-wrap { display: block !important; }
     }
   </style>
 </head>
@@ -98,28 +216,49 @@
   </div>
 
   <div class="controls">
-    <input type="text" id="searchInput" placeholder="ค้นหารหัสสินค้า หรือ ชื่อสินค้า..." />
+    <div class="search-group">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="searchInput" placeholder="ค้นหารหัสสินค้า หรือ ชื่อสินค้า..." />
+    </div>
     <select id="branchSelect"><option value="">ทุกคลัง</option></select>
-    <button onclick="loadData()">ค้นหา</button>
+    <button class="btn btn-primary" onclick="loadData()">ค้นหา</button>
+    <button class="btn btn-outline" onclick="clearSearch()">ล้าง</button>
     <div class="auto-refresh">
-      <input type="checkbox" id="autoRefresh" checked />
-      <label for="autoRefresh">Auto-refresh ทุก</label>
+      <label class="switch">
+        <input type="checkbox" id="autoRefresh" checked title="Auto-refresh" />
+        <span class="slider"></span>
+      </label>
+      <span>Auto-refresh</span>
       <select id="refreshInterval" onchange="setupAutoRefresh()">
-        <option value="30">30 วินาที</option>
-        <option value="60" selected>1 นาที</option>
-        <option value="300">5 นาที</option>
+        <option value="30">30s</option>
+        <option value="60" selected>1m</option>
+        <option value="300">5m</option>
       </select>
     </div>
   </div>
 
   <div class="summary" id="summary" style="display:none">
-    <span>สินค้า: <strong id="totalItems">0</strong> รายการ</span>
-    <span>พร้อมขาย: <strong id="totalAvailable">0</strong></span>
+    <div class="summary-card">
+      <span class="label">รายการทั้งหมด</span>
+      <span class="value" id="totalItems">0</span>
+    </div>
+    <div class="summary-card">
+      <span class="label">สินค้า (SKU)</span>
+      <span class="value" id="totalSKU">0</span>
+    </div>
+    <div class="summary-card green">
+      <span class="label">พร้อมขายรวม</span>
+      <span class="value" id="totalAvailable">0</span>
+    </div>
   </div>
 
+  <!-- Desktop: Table view -->
   <div class="table-wrap">
     <div id="content"><div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div></div>
   </div>
+
+  <!-- Mobile: Card view -->
+  <div class="card-view" id="cardContent"></div>
 
   <script>
     let refreshTimer = null;
@@ -127,6 +266,7 @@
     async function loadBranches() {
       try {
         const res = await fetch('/api/branches');
+        if (!res.ok) return;
         const branches = await res.json();
         const sel = document.getElementById('branchSelect');
         branches.forEach(b => {
@@ -134,7 +274,15 @@
           opt.value = b; opt.textContent = b;
           sel.appendChild(opt);
         });
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* ignore - will retry on next refresh */ }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('branchSelect').value = '';
+      document.getElementById('content').innerHTML = '<div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
+      document.getElementById('cardContent').innerHTML = '';
+      document.getElementById('summary').style.display = 'none';
     }
 
     async function loadData() {
@@ -144,12 +292,15 @@
       if (!search && !branch) {
         document.getElementById('content').innerHTML =
           '<div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
+        document.getElementById('cardContent').innerHTML = '';
         return;
       }
 
       document.getElementById('statusDot').style.background = '#ff9800';
+      document.getElementById('statusDot').style.animation = 'none';
       document.getElementById('statusText').textContent = 'กำลังโหลด...';
-      document.getElementById('content').innerHTML = '<div class="loading">กำลังดึงข้อมูล...</div>';
+      document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังดึงข้อมูล...</div>';
+      document.getElementById('cardContent').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังดึงข้อมูล...</div>';
 
       try {
         const params = new URLSearchParams();
@@ -161,52 +312,73 @@
         const data = await res.json();
 
         renderTable(data);
+        renderCards(data);
+        updateSummary(data);
+
         document.getElementById('statusDot').style.background = '#4caf50';
+        document.getElementById('statusDot').style.animation = 'pulse 2s infinite';
         document.getElementById('statusText').textContent = 'เชื่อมต่อแล้ว';
         document.getElementById('lastRefresh').textContent =
-          ' — อัปเดต ' + new Date().toLocaleTimeString('th-TH');
+          ' | ' + new Date().toLocaleTimeString('th-TH');
       } catch (err) {
-        document.getElementById('content').innerHTML =
-          `<div class="error">เกิดข้อผิดพลาด: ${err.message}</div>`;
+        const errHtml = `<div class="error">เกิดข้อผิดพลาด: ${err.message}</div>`;
+        document.getElementById('content').innerHTML = errHtml;
+        document.getElementById('cardContent').innerHTML = errHtml;
         document.getElementById('statusDot').style.background = '#f44336';
+        document.getElementById('statusDot').style.animation = 'none';
         document.getElementById('statusText').textContent = 'ผิดพลาด';
       }
     }
 
-    function renderTable(data) {
-      if (!data.length) {
-        document.getElementById('content').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
-        document.getElementById('summary').style.display = 'none';
-        return;
-      }
-
-      // Summary
-      document.getElementById('summary').style.display = 'flex';
-      document.getElementById('totalItems').textContent = data.length;
-      document.getElementById('totalAvailable').textContent =
-        data.reduce((s, r) => s + r.AvailableToSell, 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
-
-      // Group by ItemCode
+    function groupByItem(data) {
       const groups = {};
       data.forEach(r => {
         if (!groups[r.ItemCode]) groups[r.ItemCode] = { desc: r.Description, rows: [] };
         groups[r.ItemCode].rows.push(r);
       });
+      return groups;
+    }
 
+    function fmtQty(n) {
+      return (n || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    }
+
+    function fmtDate(d) {
+      if (!d) return '-';
+      return new Date(d).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'medium' });
+    }
+
+    function updateSummary(data) {
+      if (!data.length) {
+        document.getElementById('summary').style.display = 'none';
+        return;
+      }
+      const groups = groupByItem(data);
+      document.getElementById('summary').style.display = 'flex';
+      document.getElementById('totalItems').textContent = data.length;
+      document.getElementById('totalSKU').textContent = Object.keys(groups).length;
+      document.getElementById('totalAvailable').textContent =
+        fmtQty(data.reduce((s, r) => s + r.AvailableToSell, 0));
+    }
+
+    function renderTable(data) {
+      if (!data.length) {
+        document.getElementById('content').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
+        return;
+      }
+
+      const groups = groupByItem(data);
       let html = `<table>
         <thead><tr>
           <th>รหัสสินค้า</th><th>รายละเอียด</th><th>สี</th><th>ไซส์</th>
-          <th>คลัง</th><th>หน่วย</th><th style="text-align:right">ในคลัง</th>
-          <th style="text-align:right">จอง</th><th style="text-align:right">พร้อมขาย</th>
+          <th>คลัง</th><th>หน่วย</th><th class="text-right">ในคลัง</th>
+          <th class="text-right">จอง</th><th class="text-right">พร้อมขาย</th>
           <th>อัปเดตล่าสุด</th>
         </tr></thead><tbody>`;
 
       for (const [code, group] of Object.entries(groups)) {
         html += `<tr class="group-header"><td colspan="10">${code} — ${group.desc}</td></tr>`;
         group.rows.forEach(r => {
-          const lastUpdate = r.LastUpdate
-            ? new Date(r.LastUpdate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'medium' })
-            : '-';
           html += `<tr>
             <td>${r.ItemCode}</td>
             <td>${r.Description || '-'}</td>
@@ -214,16 +386,70 @@
             <td><span class="tag tag-size">${r.Size || '-'}</span></td>
             <td><span class="tag tag-branch">${r.Branch || '-'}</span></td>
             <td>${r.UOM || '-'}</td>
-            <td style="text-align:right">${(r.QtyOnHand || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
-            <td style="text-align:right" class="qty-reserved">${(r.QtyReserved || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
-            <td style="text-align:right" class="qty-available">${(r.AvailableToSell || 0).toLocaleString('th-TH', {maximumFractionDigits:2})}</td>
-            <td>${lastUpdate}</td>
+            <td class="text-right qty-onhand">${fmtQty(r.QtyOnHand)}</td>
+            <td class="text-right qty-reserved">${fmtQty(r.QtyReserved)}</td>
+            <td class="text-right qty-available">${fmtQty(r.AvailableToSell)}</td>
+            <td>${fmtDate(r.LastUpdate)}</td>
           </tr>`;
         });
       }
 
       html += '</tbody></table>';
       document.getElementById('content').innerHTML = html;
+    }
+
+    function renderCards(data) {
+      if (!data.length) {
+        document.getElementById('cardContent').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
+        return;
+      }
+
+      const groups = groupByItem(data);
+      let html = '';
+
+      for (const [code, group] of Object.entries(groups)) {
+        html += `<div class="item-card">
+          <div class="item-card-header">${code} — ${group.desc}</div>`;
+        group.rows.forEach(r => {
+          html += `<div class="item-card-row">
+            <div class="item-card-field">
+              <span class="label">สี</span>
+              <span class="val"><span class="tag tag-color">${r.ColorThai || '-'}</span></span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">ไซส์</span>
+              <span class="val"><span class="tag tag-size">${r.Size || '-'}</span></span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">คลัง</span>
+              <span class="val"><span class="tag tag-branch">${r.Branch || '-'}</span></span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">หน่วย</span>
+              <span class="val">${r.UOM || '-'}</span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">ในคลัง</span>
+              <span class="val qty-onhand">${fmtQty(r.QtyOnHand)}</span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">จอง</span>
+              <span class="val qty-reserved">${fmtQty(r.QtyReserved)}</span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">พร้อมขาย</span>
+              <span class="val qty-available">${fmtQty(r.AvailableToSell)}</span>
+            </div>
+            <div class="item-card-field">
+              <span class="label">อัปเดต</span>
+              <span class="val">${fmtDate(r.LastUpdate)}</span>
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+      }
+
+      document.getElementById('cardContent').innerHTML = html;
     }
 
     function setupAutoRefresh() {

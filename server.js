@@ -1,116 +1,139 @@
 require('dotenv').config();
 const express = require('express');
-const sql = require('mssql');
+const oracledb = require('oracledb');
 const path = require('path');
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+// Oracle Thick mode (requires Instant Client)
+oracledb.initOracleClient({ libDir: 'C:\\oracle\\instantclient_21_20' });
+oracledb.autoCommit = true;
+oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+
 const dbConfig = {
-  server: process.env.DB_SERVER,
-  port: parseInt(process.env.DB_PORT),
-  database: process.env.DB_DATABASE,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  options: {
-    encrypt: false,
-    trustServerCertificate: true,
-    requestTimeout: 30000,
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000,
-  },
+  user: process.env.ORACLE_USER,
+  password: process.env.ORACLE_PASSWORD,
+  connectString: `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE}`,
 };
+
+const SCHEMA = process.env.ORACLE_SCHEMA || 'PRODDTA';
 
 let pool;
 
 async function getPool() {
   if (!pool) {
-    pool = await sql.connect(dbConfig);
+    pool = await oracledb.createPool({
+      ...dbConfig,
+      poolMin: 2,
+      poolMax: 10,
+      poolTimeout: 60,
+    });
+    console.log('Oracle connection pool created');
   }
   return pool;
 }
 
-// API: Search inventory by item codes
+// API: Search inventory
 app.get('/api/inventory', async (req, res) => {
+  let conn;
   try {
     const { search, branch } = req.query;
-    const db = await getPool();
-    const request = db.request();
+    const p = await getPool();
+    conn = await p.getConnection();
 
-    let whereClause = 'WHERE 1=1';
+    let whereClauses = [];
+    let binds = {};
 
     if (search && search.trim()) {
-      request.input('search', sql.NVarChar, `%${search.trim()}%`);
-      whereClause += ` AND (LTRIM(RTRIM(I.[IMLITM])) LIKE @search
-                        OR LTRIM(RTRIM(I.[IMDSC1])) LIKE @search)`;
+      whereClauses.push(
+        `(TRIM(I.IMLITM) LIKE :search OR TRIM(I.IMDSC1) LIKE :search)`
+      );
+      binds.search = `%${search.trim()}%`;
     }
 
     if (branch && branch.trim()) {
-      request.input('branch', sql.NVarChar, branch.trim());
-      whereClause += ` AND LTRIM(RTRIM(L.[LIMCU])) = @branch`;
+      whereClauses.push(`TRIM(L.LIMCU) = :branch`);
+      binds.branch = branch.trim();
     }
 
+    // Always filter available > 0
+    whereClauses.push(`(L.LIPQOH - L.LIHCOM - L.LIPCOM) > 0`);
+
+    const whereSQL = whereClauses.length
+      ? 'WHERE ' + whereClauses.join(' AND ')
+      : '';
+
     const query = `
-      SELECT TOP 500
-        LTRIM(RTRIM(I.[IMLITM])) AS ItemCode,
-        LTRIM(RTRIM(I.[IMDSC1])) AS Description,
-        LTRIM(RTRIM(COLOR.DRDL01)) AS ColorThai,
-        LTRIM(RTRIM(SIZE_T.DRDL01)) AS Size,
-        LTRIM(RTRIM(L.[LIMCU])) AS Branch,
-        I.[IMUOM1] AS UOM,
-        L.[LIPQOH] / 100.0 AS QtyOnHand,
-        (L.[LIHCOM] + L.[LIPCOM]) / 100.0 AS QtyReserved,
-        (L.[LIPQOH] - L.[LIHCOM] - L.[LIPCOM]) / 100.0 AS AvailableToSell,
-        DATEADD(SECOND,
-          (CAST(L.[LITDAY] AS INT) / 10000 * 3600) +
-          ((CAST(L.[LITDAY] AS INT) / 100 % 100) * 60) +
-          (CAST(L.[LITDAY] AS INT) % 100),
-          DATEADD(day, CAST(L.[LIUPMJ] AS INT) % 1000 - 1,
-          DATEADD(year, CAST(L.[LIUPMJ] AS INT) / 1000, '1900-01-01'))
-        ) AS LastUpdate
-      FROM [DATABI].[dbo].[F41021] L WITH (NOLOCK)
-      INNER JOIN [DATABI].[dbo].[F4101] I WITH (NOLOCK)
-        ON L.[LIITM] = I.[IMITM]
-      LEFT JOIN [DATABI].[dbo].[F0005] COLOR WITH (NOLOCK)
-        ON LTRIM(RTRIM(COLOR.DRKY)) = LTRIM(RTRIM(I.IMSEG2))
-        AND COLOR.DRSY = '55'
-        AND COLOR.DRRT = 'CL'
-      LEFT JOIN [DATABI].[dbo].[F0005] SIZE_T WITH (NOLOCK)
-        ON LTRIM(RTRIM(SIZE_T.DRKY)) = LTRIM(RTRIM(I.IMSEG3))
-        AND SIZE_T.DRSY = '55'
-        AND SIZE_T.DRRT = 'SZ'
-      ${whereClause}
-        AND (L.[LIPQOH] - L.[LIHCOM] - L.[LIPCOM]) > 0
-      ORDER BY I.[IMLITM], AvailableToSell DESC
+      SELECT * FROM (
+        SELECT
+          TRIM(I.IMLITM) AS "ItemCode",
+          TRIM(I.IMDSC1) AS "Description",
+          TRIM(COLOR.DRDL01) AS "ColorThai",
+          TRIM(SIZE_T.DRDL01) AS "Size",
+          TRIM(L.LIMCU) AS "Branch",
+          TRIM(I.IMUOM1) AS "UOM",
+          L.LIPQOH / 100.0 AS "QtyOnHand",
+          (L.LIHCOM + L.LIPCOM) / 100.0 AS "QtyReserved",
+          (L.LIPQOH - L.LIHCOM - L.LIPCOM) / 100.0 AS "AvailableToSell",
+          TO_DATE('1900-01-01','YYYY-MM-DD')
+            + TRUNC(L.LIUPMJ / 1000) * INTERVAL '1' YEAR
+            + (MOD(L.LIUPMJ, 1000) - 1) * INTERVAL '1' DAY
+            + TRUNC(L.LITDAY / 10000) * INTERVAL '1' HOUR
+            + TRUNC(MOD(L.LITDAY, 10000) / 100) * INTERVAL '1' MINUTE
+            + MOD(L.LITDAY, 100) * INTERVAL '1' SECOND
+          AS "LastUpdate"
+        FROM ${SCHEMA}.F41021 L
+        INNER JOIN ${SCHEMA}.F4101 I ON L.LIITM = I.IMITM
+        LEFT JOIN PRODCTL.F0005 COLOR
+          ON TRIM(COLOR.DRKY) = TRIM(I.IMSEG2)
+          AND COLOR.DRSY = '55'
+          AND COLOR.DRRT = 'CL'
+        LEFT JOIN PRODCTL.F0005 SIZE_T
+          ON TRIM(SIZE_T.DRKY) = TRIM(I.IMSEG3)
+          AND SIZE_T.DRSY = '55'
+          AND SIZE_T.DRRT = 'SZ'
+        ${whereSQL}
+        ORDER BY I.IMLITM, (L.LIPQOH - L.LIHCOM - L.LIPCOM) DESC
+      ) WHERE ROWNUM <= 500
     `;
 
-    const result = await request.query(query);
-    res.json(result.recordset);
+    const result = await conn.execute(query, binds);
+    res.json(result.rows);
   } catch (err) {
     console.error('Database error:', err);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
 });
 
 // API: Get branch list
 app.get('/api/branches', async (req, res) => {
+  let conn;
   try {
-    const db = await getPool();
-    const result = await db.request().query(`
-      SELECT DISTINCT LTRIM(RTRIM(L.[LIMCU])) AS Branch
-      FROM [DATABI].[dbo].[F41021] L WITH (NOLOCK)
-      WHERE L.[LIMCU] IS NOT NULL AND L.[LIMCU] <> ''
-      ORDER BY Branch
+    const p = await getPool();
+    conn = await p.getConnection();
+    const result = await conn.execute(`
+      SELECT DISTINCT TRIM(L.LIMCU) AS "Branch"
+      FROM ${SCHEMA}.F41021 L
+      WHERE L.LIMCU IS NOT NULL
+      ORDER BY "Branch"
     `);
-    res.json(result.recordset.map(r => r.Branch));
+    res.json(result.rows.map(r => r.Branch));
   } catch (err) {
     console.error('Branch query error:', err);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  if (pool) await pool.close(0);
+  process.exit(0);
 });
 
 const PORT = process.env.PORT || 3000;
