@@ -7,8 +7,8 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// Oracle Thick mode (requires Instant Client)
-oracledb.initOracleClient({ libDir: 'C:\\Coracle\\instantclient_23_0' });
+// Thin mode: pure JavaScript driver, no Oracle Instant Client required.
+// Works on Vercel serverless and locally without additional binaries.
 oracledb.autoCommit = true;
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
@@ -26,11 +26,11 @@ async function getPool() {
   if (!pool) {
     pool = await oracledb.createPool({
       ...dbConfig,
-      poolMin: 2,
-      poolMax: 10,
-      poolTimeout: 60,
+      poolMin: 0,         // no persistent connections (serverless-friendly)
+      poolMax: 5,
+      poolTimeout: 10,    // release idle connections quickly
+      poolIncrement: 1,
     });
-    console.log('Oracle connection pool created');
   }
   return pool;
 }
@@ -130,13 +130,18 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  if (pool) await pool.close(0);
-  process.exit(0);
-});
+// Export for Vercel (serverless handler)
+module.exports = app;
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Start server only when run directly (local development)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+
+  process.on('SIGINT', async () => {
+    if (pool) await pool.close(0);
+    process.exit(0);
+  });
+}
