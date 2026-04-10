@@ -8,7 +8,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // Oracle Thick mode (requires Instant Client)
-oracledb.initOracleClient({ libDir: 'C:\\oracle\\instantclient_21_20' });
+oracledb.initOracleClient({ libDir: 'C:\\Coracle\\instantclient_23_0' });
 oracledb.autoCommit = true;
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 

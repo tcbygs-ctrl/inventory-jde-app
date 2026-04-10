@@ -5,212 +5,415 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JDE Inventory - Real-time</title>
   <style>
-    :root {
-      --primary: #1a73e8;
-      --primary-dark: #0d47a1;
-      --green: #2e7d32;
-      --orange: #e65100;
-      --red: #d32f2f;
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --border: #e0e0e0;
-      --text: #333;
-      --text-light: #666;
-      --radius: 8px;
+    /* ── Local Sarabun Font ── */
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('/fonts/sarabun-400-thai.woff2') format('woff2');
+      unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('/fonts/sarabun-400-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                     U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('/fonts/sarabun-500-thai.woff2') format('woff2');
+      unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('/fonts/sarabun-500-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                     U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('/fonts/sarabun-600-thai.woff2') format('woff2');
+      unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('/fonts/sarabun-600-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                     U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('/fonts/sarabun-700-thai.woff2') format('woff2');
+      unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
+    }
+    @font-face {
+      font-family: 'Sarabun';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('/fonts/sarabun-700-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                     U+2212, U+2215, U+FEFF, U+FFFD;
+    }
 
-    /* Header */
+    /* ── Variables ── */
+    :root {
+      --primary:      #1a73e8;
+      --primary-dark: #0d47a1;
+      --green:        #2e7d32;
+      --orange:       #e65100;
+      --red:          #d32f2f;
+      --bg:           #f0f2f5;
+      --card:         #ffffff;
+      --border:       #e0e0e0;
+      --text:         #333;
+      --text-light:   #666;
+      --radius:       8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    /* ── Header ── */
     .header {
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white; padding: 16px 24px;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 8px;
-      position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
-    .header h1 { font-size: 1.3rem; white-space: nowrap; }
-    .header .status { font-size: 0.8rem; opacity: 0.9; display: flex; align-items: center; gap: 6px; }
+    .header h1 { font-size: 1.25rem; font-weight: 600; white-space: nowrap; }
+    .header .status {
+      font-size: 0.78rem;
+      opacity: 0.95;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .header .status .dot {
-      width: 8px; height: 8px; border-radius: 50%; background: #4caf50;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #4caf50;
+      flex-shrink: 0;
       animation: pulse 2s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    /* Controls */
+    /* ── Controls ── */
     .controls {
-      padding: 16px 24px; background: var(--card);
+      padding: 12px 20px;
+      background: var(--card);
       border-bottom: 1px solid var(--border);
-      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .search-group {
-      flex: 1; min-width: 200px; position: relative;
+      flex: 1;
+      min-width: 180px;
+      position: relative;
     }
     .search-group input {
-      width: 100%; padding: 10px 14px 10px 38px;
-      border: 2px solid var(--border); border-radius: var(--radius);
-      font-size: 0.95rem; transition: border-color 0.2s;
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
     }
     .search-group input:focus { outline: none; border-color: var(--primary); }
     .search-group .search-icon {
-      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-      color: #999; font-size: 1rem;
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 0.95rem;
+      pointer-events: none;
     }
     .controls select {
-      padding: 10px 14px; border: 2px solid var(--border);
-      border-radius: var(--radius); font-size: 0.95rem;
-      background: white; min-width: 130px;
+      padding: 9px 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: white;
+      min-width: 120px;
+      cursor: pointer;
     }
     .btn {
-      padding: 10px 20px; border: none; border-radius: var(--radius);
-      font-size: 0.95rem; cursor: pointer; font-weight: 500;
-      transition: all 0.2s;
+      padding: 9px 18px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.18s;
+      white-space: nowrap;
     }
     .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
-    .btn-outline {
-      background: transparent; color: var(--primary);
-      border: 2px solid var(--primary);
-    }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
     .btn-outline:hover { background: var(--primary); color: white; }
 
     .auto-refresh {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.8rem; color: var(--text-light); margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-left: auto;
     }
     .auto-refresh select {
-      padding: 4px 8px; font-size: 0.8rem; min-width: auto;
-      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 0.8rem;
+      min-width: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
     }
-    .switch { position: relative; width: 36px; height: 20px; }
+    .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .switch .slider {
-      position: absolute; inset: 0; background: #ccc;
-      border-radius: 20px; cursor: pointer; transition: 0.3s;
+      position: absolute; inset: 0;
+      background: #ccc; border-radius: 20px; cursor: pointer; transition: 0.3s;
     }
     .switch .slider::before {
-      content: ''; position: absolute; width: 14px; height: 14px;
-      left: 3px; bottom: 3px; background: white;
-      border-radius: 50%; transition: 0.3s;
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; bottom: 3px;
+      background: white; border-radius: 50%; transition: 0.3s;
     }
     .switch input:checked + .slider { background: var(--primary); }
     .switch input:checked + .slider::before { transform: translateX(16px); }
 
-    /* Summary cards */
+    /* ── Summary cards ── */
     .summary {
-      padding: 16px 24px; display: flex; gap: 12px;
+      padding: 12px 20px;
+      display: flex;
+      gap: 10px;
       flex-wrap: wrap;
     }
     .summary-card {
-      background: var(--card); border-radius: var(--radius);
-      padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      display: flex; flex-direction: column; min-width: 120px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 10px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      min-width: 100px;
     }
-    .summary-card .label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
-    .summary-card .value { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-top: 2px; }
+    .summary-card .label {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .summary-card .value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 2px;
+    }
     .summary-card.green .value { color: var(--green); }
 
-    /* Table */
-    .table-wrap { padding: 0 24px 24px; overflow-x: auto; }
-    table {
-      width: 100%; border-collapse: collapse;
-      background: var(--card); border-radius: var(--radius); overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      min-width: 800px;
+    /* ── Table wrapper: horizontal scroll ── */
+    .table-section {
+      padding: 0 20px 28px;
     }
-    thead { background: #f8f9fa; position: sticky; top: 0; }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;       /* smooth scroll iOS */
+      border-radius: var(--radius);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    /* Right-edge fade hint on small screens */
+    .table-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 32px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+      pointer-events: none;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      transition: opacity 0.3s;
+    }
+    .table-wrap.scrolled-right::after { opacity: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      min-width: 760px;
+    }
+
+    /* Sticky header inside scroll container */
+    thead {
+      background: #f4f6fb;
+    }
     th {
-      padding: 12px 14px; text-align: left; font-size: 0.75rem; color: var(--text-light);
-      text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: #f4f6fb;
+      padding: 11px 13px;
+      text-align: left;
+      font-size: 0.72rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+      z-index: 1;
+    }
+    td {
+      padding: 9px 13px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.9rem;
       white-space: nowrap;
     }
-    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem; }
-    tr:hover { background: #f5f8ff; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f5f8ff; }
     .text-right { text-align: right; }
 
     .tag {
-      display: inline-block; padding: 3px 10px; border-radius: 12px;
-      font-size: 0.78rem; font-weight: 500; white-space: nowrap;
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 11px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      white-space: nowrap;
     }
-    .tag-color { background: #fce4ec; color: #c62828; }
-    .tag-size { background: #e8eaf6; color: #283593; }
+    .tag-color  { background: #fce4ec; color: #c62828; }
+    .tag-size   { background: #e8eaf6; color: #283593; }
     .tag-branch { background: #e0f2f1; color: #00695c; }
 
     .qty-available { font-weight: 700; color: var(--green); }
-    .qty-reserved { color: var(--orange); }
-    .qty-onhand { color: var(--primary); font-weight: 500; }
+    .qty-reserved  { color: var(--orange); }
+    .qty-onhand    { color: var(--primary); font-weight: 500; }
 
     .group-header td {
       background: linear-gradient(135deg, #e8eaf6, #f0f4ff);
-      font-weight: 600; border-top: 2px solid #c5cae9;
-      font-size: 0.92rem; padding: 10px 14px;
+      font-weight: 600;
+      border-top: 2px solid #c5cae9;
+      font-size: 0.9rem;
+      padding: 9px 13px;
+      white-space: normal;          /* allow wrap for long item names */
     }
 
-    .loading, .empty, .error {
-      text-align: center; padding: 60px 20px; font-size: 1rem;
+    /* ── States: loading / empty / error ── */
+    .state-box {
+      text-align: center;
+      padding: 56px 20px;
+      font-size: 1rem;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
-    .loading { color: #999; }
-    .error { color: var(--red); background: #fff5f5; border-radius: var(--radius); margin: 20px 0; }
-    .empty { color: #999; }
-    .loading .spinner {
-      width: 32px; height: 32px; border: 3px solid #e0e0e0;
-      border-top-color: var(--primary); border-radius: 50%;
+    .state-box.loading { color: #999; }
+    .state-box.error   { color: var(--red); background: #fff5f5; }
+    .state-box.empty   { color: #999; }
+
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid #e0e0e0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 0 auto 12px;
+      margin: 0 auto 10px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Mobile cards view */
-    .card-view { display: none; }
-    .item-card {
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      margin-bottom: 12px; overflow: hidden;
+    /* Subtle top progress bar for silent refresh */
+    .refresh-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: #69b6ff;
+      width: 0%;
+      z-index: 999;
+      transition: width 0.4s ease, opacity 0.4s;
+      opacity: 0;
     }
-    .item-card-header {
-      background: linear-gradient(135deg, #e8eaf6, #f0f4ff);
-      padding: 12px 16px; font-weight: 600; font-size: 0.9rem;
-      border-bottom: 1px solid var(--border);
+    .refresh-bar.active {
+      opacity: 1;
+      animation: progress-run 1.2s ease-in-out infinite;
     }
-    .item-card-row {
-      padding: 10px 16px; border-bottom: 1px solid #f5f5f5;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    @keyframes progress-run {
+      0%   { width: 0%;   opacity: 1; }
+      70%  { width: 85%;  opacity: 1; }
+      100% { width: 95%;  opacity: 1; }
     }
-    .item-card-row:last-child { border-bottom: none; }
-    .item-card-field { display: flex; flex-direction: column; }
-    .item-card-field .label { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; }
-    .item-card-field .val { font-size: 0.88rem; margin-top: 2px; }
+    .refresh-bar.done {
+      width: 100% !important;
+      opacity: 0;
+      transition: width 0.15s ease, opacity 0.4s ease 0.15s;
+    }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .header { padding: 12px 16px; }
-      .header h1 { font-size: 1.1rem; }
-      .controls { padding: 12px 16px; }
+    /* ── Responsive tweaks ── */
+    @media (max-width: 600px) {
+      .header { padding: 11px 14px; }
+      .header h1 { font-size: 1.05rem; }
+      .controls { padding: 10px 14px; }
       .search-group { min-width: 100%; }
       .controls select { flex: 1; min-width: 0; }
       .auto-refresh { width: 100%; margin-left: 0; justify-content: center; }
-      .summary { padding: 12px 16px; }
-      .summary-card { flex: 1; min-width: 80px; padding: 10px 14px; }
+      .summary { padding: 10px 14px; }
+      .summary-card { flex: 1; min-width: 80px; padding: 8px 12px; }
       .summary-card .value { font-size: 1.1rem; }
-      .table-wrap { padding: 0 16px 16px; display: none; }
-      .card-view { display: block; padding: 0 16px 16px; }
-    }
-    @media (min-width: 769px) {
-      .card-view { display: none !important; }
-      .table-wrap { display: block !important; }
+      .table-section { padding: 0 10px 20px; }
     }
   </style>
 </head>
 <body>
+  <!-- Progress bar for silent refresh -->
+  <div class="refresh-bar" id="refreshBar"></div>
+
   <div class="header">
     <h1>JDE Inventory Viewer</h1>
     <div class="status">
       <span class="dot" id="statusDot"></span>
-      <span id="statusText">Ready</span>
+      <span id="statusText">พร้อมใช้งาน</span>
       <span id="lastRefresh"></span>
     </div>
   </div>
@@ -221,14 +424,14 @@
       <input type="text" id="searchInput" placeholder="ค้นหารหัสสินค้า หรือ ชื่อสินค้า..." />
     </div>
     <select id="branchSelect"><option value="">ทุกคลัง</option></select>
-    <button class="btn btn-primary" onclick="loadData()">ค้นหา</button>
+    <button class="btn btn-primary" onclick="loadData(false)">ค้นหา</button>
     <button class="btn btn-outline" onclick="clearSearch()">ล้าง</button>
     <div class="auto-refresh">
       <label class="switch">
         <input type="checkbox" id="autoRefresh" checked title="Auto-refresh" />
         <span class="slider"></span>
       </label>
-      <span>Auto-refresh</span>
+      <span>Auto</span>
       <select id="refreshInterval" onchange="setupAutoRefresh()">
         <option value="30">30s</option>
         <option value="60" selected>1m</option>
@@ -252,17 +455,24 @@
     </div>
   </div>
 
-  <!-- Desktop: Table view -->
-  <div class="table-wrap">
-    <div id="content"><div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div></div>
+  <div class="table-section">
+    <div class="table-wrap" id="tableWrap">
+      <div class="state-box loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>
+    </div>
   </div>
-
-  <!-- Mobile: Card view -->
-  <div class="card-view" id="cardContent"></div>
 
   <script>
     let refreshTimer = null;
+    let hasData = false;      // ถ้ามีข้อมูลอยู่แล้ว ให้ silent refresh
 
+    // ── Scroll fade hint ──────────────────────────────────────
+    const wrap = document.getElementById('tableWrap');
+    wrap.addEventListener('scroll', () => {
+      const atEnd = wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 4;
+      wrap.classList.toggle('scrolled-right', atEnd);
+    });
+
+    // ── Branches ─────────────────────────────────────────────
     async function loadBranches() {
       try {
         const res = await fetch('/api/branches');
@@ -274,33 +484,56 @@
           opt.value = b; opt.textContent = b;
           sel.appendChild(opt);
         });
-      } catch (e) { /* ignore - will retry on next refresh */ }
+      } catch (e) { /* ignore */ }
     }
 
+    // ── Clear ─────────────────────────────────────────────────
     function clearSearch() {
       document.getElementById('searchInput').value = '';
       document.getElementById('branchSelect').value = '';
-      document.getElementById('content').innerHTML = '<div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
-      document.getElementById('cardContent').innerHTML = '';
+      document.getElementById('tableWrap').innerHTML =
+        '<div class="state-box loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
       document.getElementById('summary').style.display = 'none';
+      hasData = false;
     }
 
-    async function loadData() {
+    // ── Progress bar ──────────────────────────────────────────
+    function barStart() {
+      const bar = document.getElementById('refreshBar');
+      bar.className = 'refresh-bar active';
+    }
+    function barDone() {
+      const bar = document.getElementById('refreshBar');
+      bar.classList.remove('active');
+      bar.classList.add('done');
+      setTimeout(() => { bar.className = 'refresh-bar'; }, 600);
+    }
+
+    // ── Main load ─────────────────────────────────────────────
+    // silent = true  → background refresh: progress bar only, table stays visible
+    // silent = false → user action: show spinner while loading
+    async function loadData(silent) {
       const search = document.getElementById('searchInput').value;
       const branch = document.getElementById('branchSelect').value;
 
       if (!search && !branch) {
-        document.getElementById('content').innerHTML =
-          '<div class="loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
-        document.getElementById('cardContent').innerHTML = '';
+        document.getElementById('tableWrap').innerHTML =
+          '<div class="state-box loading">กรอกรหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</div>';
+        document.getElementById('summary').style.display = 'none';
+        hasData = false;
         return;
       }
 
-      document.getElementById('statusDot').style.background = '#ff9800';
-      document.getElementById('statusDot').style.animation = 'none';
-      document.getElementById('statusText').textContent = 'กำลังโหลด...';
-      document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังดึงข้อมูล...</div>';
-      document.getElementById('cardContent').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังดึงข้อมูล...</div>';
+      if (silent && hasData) {
+        // Silent refresh: progress bar only, no spinner
+        barStart();
+        setStatus('orange', 'กำลังอัปเดต...', false);
+      } else {
+        // First load or manual search: show spinner
+        document.getElementById('tableWrap').innerHTML =
+          '<div class="state-box loading"><div class="spinner"></div>กำลังดึงข้อมูล...</div>';
+        setStatus('orange', 'กำลังโหลด...', false);
+      }
 
       try {
         const params = new URLSearchParams();
@@ -312,24 +545,32 @@
         const data = await res.json();
 
         renderTable(data);
-        renderCards(data);
         updateSummary(data);
+        hasData = data.length > 0;
 
-        document.getElementById('statusDot').style.background = '#4caf50';
-        document.getElementById('statusDot').style.animation = 'pulse 2s infinite';
-        document.getElementById('statusText').textContent = 'เชื่อมต่อแล้ว';
+        setStatus('green', 'เชื่อมต่อแล้ว', true);
         document.getElementById('lastRefresh').textContent =
-          ' | ' + new Date().toLocaleTimeString('th-TH');
+          ' · ' + new Date().toLocaleTimeString('th-TH');
+        barDone();
       } catch (err) {
-        const errHtml = `<div class="error">เกิดข้อผิดพลาด: ${err.message}</div>`;
-        document.getElementById('content').innerHTML = errHtml;
-        document.getElementById('cardContent').innerHTML = errHtml;
-        document.getElementById('statusDot').style.background = '#f44336';
-        document.getElementById('statusDot').style.animation = 'none';
-        document.getElementById('statusText').textContent = 'ผิดพลาด';
+        barDone();
+        if (!silent) {
+          document.getElementById('tableWrap').innerHTML =
+            `<div class="state-box error">เกิดข้อผิดพลาด: ${err.message}</div>`;
+        }
+        setStatus('red', 'ผิดพลาด', false);
       }
     }
 
+    function setStatus(color, text, animate) {
+      const dot = document.getElementById('statusDot');
+      const colors = { green: '#4caf50', orange: '#ff9800', red: '#f44336' };
+      dot.style.background = colors[color] || '#4caf50';
+      dot.style.animation = animate ? 'pulse 2s infinite' : 'none';
+      document.getElementById('statusText').textContent = text;
+    }
+
+    // ── Render helpers ────────────────────────────────────────
     function groupByItem(data) {
       const groups = {};
       data.forEach(r => {
@@ -363,16 +604,23 @@
 
     function renderTable(data) {
       if (!data.length) {
-        document.getElementById('content').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
+        document.getElementById('tableWrap').innerHTML =
+          '<div class="state-box empty">ไม่พบข้อมูล</div>';
         return;
       }
 
       const groups = groupByItem(data);
       let html = `<table>
         <thead><tr>
-          <th>รหัสสินค้า</th><th>รายละเอียด</th><th>สี</th><th>ไซส์</th>
-          <th>คลัง</th><th>หน่วย</th><th class="text-right">ในคลัง</th>
-          <th class="text-right">จอง</th><th class="text-right">พร้อมขาย</th>
+          <th>รหัสสินค้า</th>
+          <th>รายละเอียด</th>
+          <th>สี</th>
+          <th>ไซส์</th>
+          <th>คลัง</th>
+          <th>หน่วย</th>
+          <th class="text-right">ในคลัง</th>
+          <th class="text-right">จอง</th>
+          <th class="text-right">พร้อมขาย</th>
           <th>อัปเดตล่าสุด</th>
         </tr></thead><tbody>`;
 
@@ -395,75 +643,28 @@
       }
 
       html += '</tbody></table>';
-      document.getElementById('content').innerHTML = html;
+      document.getElementById('tableWrap').innerHTML = html;
+
+      // Reset scroll-fade hint after new content
+      wrap.scrollLeft = 0;
+      wrap.classList.remove('scrolled-right');
     }
 
-    function renderCards(data) {
-      if (!data.length) {
-        document.getElementById('cardContent').innerHTML = '<div class="empty">ไม่พบข้อมูล</div>';
-        return;
-      }
-
-      const groups = groupByItem(data);
-      let html = '';
-
-      for (const [code, group] of Object.entries(groups)) {
-        html += `<div class="item-card">
-          <div class="item-card-header">${code} — ${group.desc}</div>`;
-        group.rows.forEach(r => {
-          html += `<div class="item-card-row">
-            <div class="item-card-field">
-              <span class="label">สี</span>
-              <span class="val"><span class="tag tag-color">${r.ColorThai || '-'}</span></span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">ไซส์</span>
-              <span class="val"><span class="tag tag-size">${r.Size || '-'}</span></span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">คลัง</span>
-              <span class="val"><span class="tag tag-branch">${r.Branch || '-'}</span></span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">หน่วย</span>
-              <span class="val">${r.UOM || '-'}</span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">ในคลัง</span>
-              <span class="val qty-onhand">${fmtQty(r.QtyOnHand)}</span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">จอง</span>
-              <span class="val qty-reserved">${fmtQty(r.QtyReserved)}</span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">พร้อมขาย</span>
-              <span class="val qty-available">${fmtQty(r.AvailableToSell)}</span>
-            </div>
-            <div class="item-card-field">
-              <span class="label">อัปเดต</span>
-              <span class="val">${fmtDate(r.LastUpdate)}</span>
-            </div>
-          </div>`;
-        });
-        html += '</div>';
-      }
-
-      document.getElementById('cardContent').innerHTML = html;
-    }
-
+    // ── Auto-refresh ──────────────────────────────────────────
     function setupAutoRefresh() {
       if (refreshTimer) clearInterval(refreshTimer);
       const sec = parseInt(document.getElementById('refreshInterval').value);
       refreshTimer = setInterval(() => {
-        if (document.getElementById('autoRefresh').checked) loadData();
+        if (document.getElementById('autoRefresh').checked) loadData(true);
       }, sec * 1000);
     }
 
+    // ── Enter key ─────────────────────────────────────────────
     document.getElementById('searchInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') loadData();
+      if (e.key === 'Enter') loadData(false);
     });
 
+    // ── Init ──────────────────────────────────────────────────
     loadBranches();
     setupAutoRefresh();
   </script>
